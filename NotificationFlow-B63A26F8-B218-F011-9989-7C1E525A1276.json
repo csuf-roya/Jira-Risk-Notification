@@ -1,0 +1,369 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_jira_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "cr948_sharedjira_d0573"
+        },
+        "api": {
+          "name": "shared_jira"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_226ec"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Week",
+            "interval": 1,
+            "timeZone": "Pacific Standard Time",
+            "schedule": {
+              "weekDays": [
+                "Monday"
+              ],
+              "hours": [
+                "7"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "82cf0a0d-9779-450d-8b3d-e346cce4fd2c"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Get_list_of_issues": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "99c9a26c-b726-4964-82fe-bb9ec18bf1aa"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_jira_1",
+              "operationId": "ListIssues",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_jira"
+            },
+            "parameters": {
+              "X-Request-Jirainstance": "https://zeinaliroya.atlassian.net"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('Get_list_of_issues')?['body/issues']",
+          "actions": {
+            "Condition_Due_Month": {
+              "actions": {
+                "Send_an_email_Due_Month": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "ce11d20e-a777-4d10-8425-4909f0087913"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365_1",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@{items('Apply_to_each')?['fields/assignee/emailAddress']};lmorrison@fullerton.edu;lidia.morrison@gmail.com",
+                      "emailMessage/Subject": "Friendy Reminder: Upcoming Risk Task Due Next Month",
+                      "emailMessage/Body": "<p>Dear Assignee,<br>\n<br>\nThis is a friendly reminder that your task for Risk @{items('Apply_to_each')?['key']} is due within the next month.<br>\n<br>\nPlease click the link below to review the details and plan for completing your assigned action:<br>\nhttps://zeinaliroya.atlassian.net/jira/software/projects/JR/issues/@{items('Apply_to_each')?['key']}<br>\n<br>\nStaying ahead of deadlines helps us manage risks proactively. If you have any questions or foresee any challenges, feel free to reach out.<br>\n<br>\nThank you for your attention and cooperation.</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {},
+              "else": {
+                "actions": {
+                  "Condition_Due_Week": {
+                    "actions": {
+                      "Send_an_email_(V2)_Due_Week": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "33c4ca28-8834-47ed-9b82-601afec99f64"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365_1",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{items('Apply_to_each')?['fields/assignee/emailAddress']};lmorrison@fullerton.edu;lidia.morrison@gmail.com",
+                            "emailMessage/Subject": "Reminder: Upcoming Risk Task Due within one week",
+                            "emailMessage/Body": "<p>Dear Assignee,<br>\n<br>\nThis is a reminder that your task for Risk @{items('Apply_to_each')?['key']} is due within the next week.<br>\n<br>\nPlease click the link below to review and complete your assigned action before the due date:<br>\nhttps://zeinaliroya.atlassian.net/jira/software/projects/JR/issues/@{items('Apply_to_each')?['key']}<br>\n<br>\nCompleting the task on time helps us manage risks effectively. If you have any questions or need assistance, please let me know.<br>\n<br>\nThank you for your prompt attention.</p>",
+                            "emailMessage/Importance": "Normal"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    },
+                    "runAfter": {},
+                    "else": {
+                      "actions": {
+                        "Condition": {
+                          "actions": {
+                            "Send_an_email_(V2)_-_Due_Today": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "a7c63b6d-f2a0-40f7-a5b5-0aa15df802af"
+                              },
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_office365_1",
+                                  "operationId": "SendEmailV2",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                },
+                                "parameters": {
+                                  "emailMessage/To": "@{items('Apply_to_each')?['fields/assignee/emailAddress']};lmorrison@fullerton.edu;lidia.morrison@gmail.com",
+                                  "emailMessage/Subject": "Action Required: Past Due Risk Tak",
+                                  "emailMessage/Body": "<p>Dear Assignee,<br>\n<br>\nThis is a reminder that your task for Risk @{items('Apply_to_each')?['key']} is now past due.<br>\n<br>\nPlease click the link below to review and complete your assigned action:<br>\nhttps://zeinaliroya.atlassian.net/jira/software/projects/JR/issues/@{items('Apply_to_each')?['key']}<br>\n<br>\nTimely resolution is important to ensure proper risk management. If you have any questions or need support, feel free to reach out.<br>\n<br>\nThank you for your attention to this matter.</p>",
+                                  "emailMessage/Importance": "Normal"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                              }
+                            }
+                          },
+                          "runAfter": {},
+                          "else": {
+                            "actions": {
+                              "Set_variable_3": {
+                                "runAfter": {},
+                                "metadata": {
+                                  "operationMetadataId": "64c92d46-ebd5-499f-9b96-9ca81ae0dc94"
+                                },
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "Error",
+                                  "value": "@items('Apply_to_each')?['key']"
+                                }
+                              },
+                              "Set_variable": {
+                                "runAfter": {
+                                  "Set_variable_3": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "1ae11c2e-cca6-46a1-8b9f-8ae743f2663b"
+                                },
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "DueMonth",
+                                  "value": "@{items('Apply_to_each')?['fields/resolution/name']} - @{items('Apply_to_each')?['fields/issuetype/name']}"
+                                }
+                              }
+                            }
+                          },
+                          "expression": {
+                            "and": [
+                              {
+                                "lessOrEquals": [
+                                  "@items('Apply_to_each')?['fields/duedate']",
+                                  "@utcNow()"
+                                ]
+                              },
+                              {
+                                "equals": [
+                                  "@items('Apply_to_each')?['fields/resolution/name']",
+                                  "Unresolved"
+                                ]
+                              },
+                              {
+                                "equals": [
+                                  "@items('Apply_to_each')?['fields/issuetype/name']",
+                                  "Risk"
+                                ]
+                              }
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "c436dbd8-0bda-43a4-a33c-efd3ab131eed"
+                          },
+                          "type": "If"
+                        }
+                      }
+                    },
+                    "expression": {
+                      "and": [
+                        {
+                          "lessOrEquals": [
+                            "@items('Apply_to_each')?['fields/duedate']",
+                            "@addDays(utcNow(), 7)\r\n"
+                          ]
+                        },
+                        {
+                          "greaterOrEquals": [
+                            "@items('Apply_to_each')?['fields/duedate']",
+                            "@utcNow()"
+                          ]
+                        },
+                        {
+                          "equals": [
+                            "@items('Apply_to_each')?['fields/resolution/name']",
+                            "Unresolved"
+                          ]
+                        },
+                        {
+                          "equals": [
+                            "@items('Apply_to_each')?['fields/issuetype/name']",
+                            "Risk"
+                          ]
+                        }
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "200e910e-4a4b-43d3-8234-1256dd8b9950"
+                    },
+                    "type": "If"
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "and": [
+                      {
+                        "equals": [
+                          "@items('Apply_to_each')?['fields/resolution/name']",
+                          "Unresolved"
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@items('Apply_to_each')?['fields/issuetype/name']",
+                          "Risk"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "lessOrEquals": [
+                          "@items('Apply_to_each')?['fields/duedate']",
+                          "@addDays(utcNow(), 30)\r\n"
+                        ]
+                      },
+                      {
+                        "greaterOrEquals": [
+                          "@items('Apply_to_each')?['fields/duedate']",
+                          "@addDays(utcNow(), 7)\r\n"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2fef7053-c375-48aa-a363-5b4bf97fd693"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "DueMonth": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "22b21cf3-fe07-49e0-b779-6f865c4cbcf1"
+          },
+          "type": "Foreach"
+        },
+        "DueWeek": {
+          "runAfter": {
+            "ErrorHandeling": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f27d7a4f-a8b8-4ca9-a2c6-5366867dd0d8"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "DueWeek",
+                "type": "string",
+                "value": "@{addDays(utcNow(), 7)}"
+              }
+            ]
+          }
+        },
+        "DueMonth": {
+          "runAfter": {
+            "DueWeek": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e3644ba6-0d8d-4fac-a7a2-28d09cdc1fd1"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "DueMonth",
+                "type": "string",
+                "value": "@{addDays(utcNow(), 30)\r\n}"
+              }
+            ]
+          }
+        },
+        "ErrorHandeling": {
+          "runAfter": {
+            "Get_list_of_issues": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "51824c0c-a3bb-4df1-9f27-a70de21a0822"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Error",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}
